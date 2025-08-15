@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>جوال 1 — إرسال والانتظار</title>
+  <style>
+    body{font-family:Arial,system-ui;background:#0b1020;color:#e9edff;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .card{background:#121832;border:1px solid #263164;border-radius:16px;padding:22px;width:min(92%,560px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    input{width:100%;padding:12px;margin:6px 0 12px;border-radius:10px;border:1px solid #263164;background:#0e1636;color:#e9edff;outline:none}
+    button{padding:12px 14px;border:0;border-radius:10px;background:#3a69ff;color:#fff;font-weight:800;cursor:pointer}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#0e1636;border:1px solid #263164}
+    .mono{font-family:ui-monospace,Consolas,monaco,monospace}
+    .box{padding:10px;border:1px dashed #263164;border-radius:10px;margin-top:8px;word-break:break-all}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>جوال 1 — تسجيل وإرسال</h2>
+    <p style="color:#a8b3ff;font-size:12px">تجريبي فقط — لا تستخدم بيانات حقيقية.</p>
+    <label>الإيميل</label>
+    <input type="email" id="email" placeholder="example@gmail.com" />
+    <label>كلمة المرور</label>
+    <input type="password" id="password" placeholder="*******" />
+    <div class="row">
+      <button id="start">إرسال والانتظار</button>
+      <span id="status" class="pill">غير مرسل</span>
+    </div>
+    <div id="share" class="box" style="display:none">
+      <div>ارسل هذا الرابط لـ <strong>جوال 2</strong>:</div>
+      <div id="link" class="mono"></div>
+      <button id="copy">نسخ الرابط</button>
+    </div>
+    <div id="result" class="box" style="display:none"></div>
+  </div>
+
+  <script type="module">
+    const firebaseConfig = {"apiKey": "AIzaSyDInDvI0xrWCmvfKN6QQQpB5YiESeJS_Jc", "authDomain": "iugfgg.firebaseapp.com", "projectId": "iugfgg", "storageBucket": "iugfgg.firebasestorage.app", "messagingSenderId": "595497115275", "appId": "1:595497115275:web:7f019d07b5ea61e2677e8e", "measurementId": "G-JR5KEPMHPR"};
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const $ = s => document.querySelector(s);
+    const makeId = () => 's_' + Math.random().toString(36).slice(2, 8);
+
+    const btn = $("#start");
+    const st  = $("#status");
+    const share = $("#share");
+    const link = $("#link");
+    const copyBtn = $("#copy");
+    const res = $("#result");
+
+    btn.addEventListener("click", async () => {
+      const email = $("#email").value.trim();
+      const password = $("#password").value.trim();
+      const id = makeId();
+
+      const ref = doc(db, "sessions", id);
+      await setDoc(ref, { email, password, status: "pending", createdAt: serverTimestamp() });
+
+      const base = location.origin + location.pathname.replace(/[^\/]*$/, "");
+      const url = base + "receiver.html?id=" + id;
+      link.textContent = url;
+      share.style.display = "block";
+      st.textContent = "بانتظار رد جوال 2...";
+
+      onSnapshot(ref, (snap) => {
+        const data = snap.data(); if (!data) return;
+        if (data.status === "approved") {
+          st.textContent = "تمت الموافقة ✅";
+          res.style.display = "block";
+          res.textContent = "جوال 2 وافق.";
+        } else if (data.status === "rejected") {
+          st.textContent = "تم الرفض ❌";
+          res.style.display = "block";
+          res.textContent = "جوال 2 رفض.";
+        } else {
+          res.style.display = "none";
+        }
+      });
+    });
+
+    document.getElementById("copy").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(link.textContent); document.getElementById("copy").textContent = "نسخ ✅"; setTimeout(()=>document.getElementById("copy").textContent="نسخ الرابط",1200); }
+      catch { alert(link.textContent); }
+    });
+  </script>
+</body>
+</html>
